@@ -1,6 +1,6 @@
 test:
 	go mod tidy
-	go test -v ./...
+	go test -v ./... -race
 
 build:
 	go build -o bin/url-shortener ./cmd/url-shortener
