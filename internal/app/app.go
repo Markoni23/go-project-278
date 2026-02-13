@@ -1,25 +1,20 @@
-package main
+package app
 
 import (
-	"fmt"
-	"log"
+	"context"
+	"database/sql"
+	"markoni23/url-shortener/internal/config"
+	. "markoni23/url-shortener/internal/db"
+	"markoni23/url-shortener/internal/routes"
+	"markoni23/url-shortener/internal/service"
 	"net/http"
-	"os"
 
 	"github.com/getsentry/sentry-go"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
-func setupEnv() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-}
-
-func setupRouter() *gin.Engine {
+func Run(ctx context.Context, cfg config.Config, db *sql.DB) error {
 	router := gin.Default()
 	router.Use(sentrygin.New(sentrygin.Options{}))
 
@@ -33,25 +28,15 @@ func setupRouter() *gin.Engine {
 		ctx.Status(http.StatusOK)
 	})
 
-	router.GET("/ping", func(c *gin.Context) {
-		//panic("test")
+	linkRepo := NewDBLinkRepository(db)
+	linkService := service.NewLinkService(cfg.Server.BasePath, linkRepo)
+	routes.LinkRoutes(&router.RouterGroup, *linkService)
 
+	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
 	})
 
-	return router
-}
+	router.Run(":" + cfg.Server.Port)
 
-func main() {
-	setupEnv()
-	if err := sentry.Init(sentry.ClientOptions{
-		Dsn: os.Getenv("SENTRY_DSN"),
-	}); err != nil {
-		fmt.Printf("Sentry initialization failed: %v\n", err)
-	}
-
-	router := setupRouter()
-	if err := router.Run(":8080"); err != nil {
-		log.Fatal(err)
-	}
+	return nil
 }
