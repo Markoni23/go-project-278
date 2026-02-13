@@ -33,7 +33,7 @@ func LoadEnv() Config {
 		Env: os.Getenv("ENV"),
 		Server: ServerConfig{
 			BasePath:  os.Getenv("BASE_PATH"),
-			Port:      os.Getenv("SERVER_PORT"),
+			Port:      os.Getenv("PORT"),
 			SentryDSN: os.Getenv("SENTRY_DSN"),
 		},
 		Database: DBConfig{
