@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"markoni23/url-shortener/internal/config"
-	. "markoni23/url-shortener/internal/db"
-	"markoni23/url-shortener/internal/routes"
-	"markoni23/url-shortener/internal/service"
+	"markoni23/url-shortener/internal/handler"
+	linkHandler "markoni23/url-shortener/internal/handler/link"
+	linkRepository "markoni23/url-shortener/internal/repository/link"
+	linkService "markoni23/url-shortener/internal/service/link"
 	"net/http"
 
 	"github.com/getsentry/sentry-go"
@@ -28,10 +29,11 @@ func Run(ctx context.Context, cfg config.Config, db *sql.DB) error {
 		ctx.Status(http.StatusOK)
 	})
 
-	linkRepo := NewDBLinkRepository(db)
-	linkService := service.NewLinkService(cfg.Server.BasePath, linkRepo)
-	routes.LinkRoutes(&router.RouterGroup, *linkService)
+	linkRepo := linkRepository.NewDBLinkRepository(db)
+	linkService := linkService.NewService(cfg.Server.BasePath, linkRepo)
+	linkHand := linkHandler.NewHandler(linkService)
 
+	handler.RegisterRoutes(&router.RouterGroup, linkHand)
 	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
 	})

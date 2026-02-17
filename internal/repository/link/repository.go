@@ -1,10 +1,10 @@
-package db
+package link
 
 import (
 	"context"
 	"database/sql"
 	"markoni23/url-shortener/internal/domain"
-	"markoni23/url-shortener/internal/repository"
+	"markoni23/url-shortener/internal/dto"
 	"markoni23/url-shortener/internal/sqlcdb"
 )
 
@@ -39,7 +39,7 @@ func (d *DBLinkRepositry) Get(ctx context.Context, id int64) (domain.Link, error
 	return sqlcdbToDomainLink(link), nil
 }
 
-func (d *DBLinkRepositry) Create(ctx context.Context, dto repository.CreateLinkDTO) (domain.Link, error) {
+func (d *DBLinkRepositry) Create(ctx context.Context, dto dto.CreateLinkDTO) (domain.Link, error) {
 	link, err := d.queries.CreateLink(ctx, sqlcdb.CreateLinkParams{
 		OriginalUrl: sql.NullString{String: *dto.OriginalUrl, Valid: dto.OriginalUrl != nil},
 		ShortName:   sql.NullString{String: *dto.ShortName, Valid: dto.ShortName != nil},
@@ -53,7 +53,7 @@ func (d *DBLinkRepositry) Create(ctx context.Context, dto repository.CreateLinkD
 	return sqlcdbToDomainLink(link), nil
 }
 
-func (d *DBLinkRepositry) Update(ctx context.Context, id int64, dto repository.UpdateLinkDTO) (domain.Link, error) {
+func (d *DBLinkRepositry) Update(ctx context.Context, id int64, dto dto.UpdateLinkDTO) (domain.Link, error) {
 	params := sqlcdb.UpdateLinkParams{
 		ID:          id,
 		OriginalUrl: sql.NullString{String: *dto.OriginalUrl, Valid: dto.OriginalUrl != nil},

@@ -1,28 +1,36 @@
-package controller
+package link
 
 import (
+	"context"
 	"errors"
 	"markoni23/url-shortener/internal/domain"
-	"markoni23/url-shortener/internal/service"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-type LinkController struct {
-	Service service.LinkService
+type Service interface {
+	GetAll(ctx context.Context) ([]domain.Link, error)
+	Get(ctx context.Context, id int64) (domain.Link, error)
+	Create(ctx context.Context, originalUrl, shortName string) (domain.Link, error)
+	Update(ctx context.Context, id int64, originalUrl, shortName string) (domain.Link, error)
+	Delete(ctx context.Context, id int64) error
 }
 
-func NewLinkController(service service.LinkService) *LinkController {
-	return &LinkController{
-		Service: service,
+type handler struct {
+	service Service
+}
+
+func NewHandler(service Service) *handler {
+	return &handler{
+		service: service,
 	}
 }
 
-func (l *LinkController) GetLinksList(ctx *gin.Context) {
+func (l *handler) GetLinksList(ctx *gin.Context) {
 
-	res, err := l.Service.GetLinksList(ctx)
+	res, err := l.service.GetAll(ctx)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 	}
@@ -35,14 +43,14 @@ type CreateLinkRequest struct {
 	ShortName   string `json:"short_name,omitempty"`
 }
 
-func (l *LinkController) CreateLink(ctx *gin.Context) {
+func (h *handler) CreateLink(ctx *gin.Context) {
 	var r CreateLinkRequest
 	if err := ctx.ShouldBindJSON(&r); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	_, err := l.Service.CreateLink(ctx, r.OriginalUrl, r.ShortName)
+	_, err := h.service.Create(ctx, r.OriginalUrl, r.ShortName)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -51,7 +59,7 @@ func (l *LinkController) CreateLink(ctx *gin.Context) {
 	ctx.Status(http.StatusCreated)
 }
 
-func (l *LinkController) GetLink(ctx *gin.Context) {
+func (h *handler) GetLink(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseInt(idParam, 0, 64)
 	if err != nil {
@@ -59,7 +67,7 @@ func (l *LinkController) GetLink(ctx *gin.Context) {
 		return
 	}
 
-	link, err := l.Service.GetLink(ctx, id)
+	link, err := h.service.Get(ctx, id)
 	if err != nil {
 		if errors.Is(err, &domain.LinkNotFoundError{}) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -78,7 +86,7 @@ type UpdateLinkRequest struct {
 	ShortName   string `json:"short_name" binding:"required"`
 }
 
-func (l *LinkController) UpdateLink(ctx *gin.Context) {
+func (h *handler) UpdateLink(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseInt(idParam, 0, 64)
 	if err != nil {
@@ -92,7 +100,7 @@ func (l *LinkController) UpdateLink(ctx *gin.Context) {
 		return
 	}
 
-	link, err := l.Service.UpdateLink(ctx, id, req.OriginalUrl, req.ShortName)
+	link, err := h.service.Update(ctx, id, req.OriginalUrl, req.ShortName)
 	if err != nil {
 		if errors.Is(err, &domain.LinkNotFoundError{}) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -106,14 +114,14 @@ func (l *LinkController) UpdateLink(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, link)
 }
 
-func (l *LinkController) DeleteLink(ctx *gin.Context) {
+func (h *handler) DeleteLink(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.ParseInt(idParam, 0, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := l.Service.DeleteLink(ctx, id); err != nil {
+	if err := h.service.Delete(ctx, id); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
