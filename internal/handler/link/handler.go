@@ -3,15 +3,18 @@ package link
 import (
 	"context"
 	"errors"
+	"fmt"
 	"markoni23/url-shortener/internal/domain"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Service interface {
-	GetAll(ctx context.Context) ([]domain.Link, error)
+	Count(ctx context.Context) (int64, error)
+	GetAll(ctx context.Context, from, to int64) ([]domain.Link, error)
 	Get(ctx context.Context, id int64) (domain.Link, error)
 	Create(ctx context.Context, originalUrl, shortName string) (domain.Link, error)
 	Update(ctx context.Context, id int64, originalUrl, shortName string) (domain.Link, error)
@@ -29,11 +32,40 @@ func NewHandler(service Service) *handler {
 }
 
 func (l *handler) GetLinksList(ctx *gin.Context) {
+	rangeString := ctx.DefaultQuery("range", "[1,10]")
 
-	res, err := l.service.GetAll(ctx)
+	rangeWithoutBrackets := strings.Trim(rangeString, "[]")
+	fromToSlice := strings.Split(rangeWithoutBrackets, ",")
+
+	if len(fromToSlice) != 2 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "wrong range format"})
+		return
+	}
+
+	from, err := strconv.Atoi(strings.TrimSpace(fromToSlice[0]))
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "invalid 'from' value"})
+		return
+	}
+
+	to, err := strconv.Atoi(strings.TrimSpace(fromToSlice[1]))
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "invalid 'to' value"})
+		return
+	}
+
+	res, err := l.service.GetAll(ctx, int64(from), int64(to))
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 	}
+
+	count, err := l.service.Count(ctx)
+	if err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+	}
+	
+	headerValue := fmt.Sprintf("links %d-%d/%d", from, to, count)
+	ctx.Header("Content-Range", headerValue)
 
 	ctx.JSON(http.StatusOK, res)
 }

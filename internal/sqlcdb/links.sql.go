@@ -71,10 +71,17 @@ func (q *Queries) GetLink(ctx context.Context, id int64) (Link, error) {
 const getLinks = `-- name: GetLinks :many
 SELECT id, original_url, short_name, short_url, created_at, updated_at FROM links
 ORDER BY id
+LIMIT $1
+OFFSET $2
 `
 
-func (q *Queries) GetLinks(ctx context.Context) ([]Link, error) {
-	rows, err := q.db.QueryContext(ctx, getLinks)
+type GetLinksParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetLinks(ctx context.Context, arg GetLinksParams) ([]Link, error) {
+	rows, err := q.db.QueryContext(ctx, getLinks, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -101,6 +108,17 @@ func (q *Queries) GetLinks(ctx context.Context) ([]Link, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getLinksCount = `-- name: GetLinksCount :one
+SELECT COUNT(1) FROM links
+`
+
+func (q *Queries) GetLinksCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getLinksCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const updateLink = `-- name: UpdateLink :one

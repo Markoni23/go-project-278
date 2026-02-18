@@ -18,8 +18,15 @@ func NewDBLinkRepository(pool *sql.DB) *DBLinkRepositry {
 	}
 }
 
-func (d *DBLinkRepositry) FindAll(ctx context.Context) ([]domain.Link, error) {
-	links, err := d.queries.GetLinks(ctx)
+func (d *DBLinkRepositry) Count(ctx context.Context) (int64, error) {
+	return d.queries.GetLinksCount(ctx)
+}
+
+func (d *DBLinkRepositry) FindAll(ctx context.Context, dto dto.GetLinksDTO) ([]domain.Link, error) {
+	links, err := d.queries.GetLinks(ctx, sqlcdb.GetLinksParams{
+		Limit:  int32(*dto.Limit),
+		Offset: int32(*dto.Offset),
+	})
 	if err != nil {
 		return []domain.Link{}, err
 	}

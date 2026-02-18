@@ -12,7 +12,8 @@ import (
 )
 
 type LinkRepository interface {
-	FindAll(ctx context.Context) ([]domain.Link, error)
+	Count(ctx context.Context) (int64, error)
+	FindAll(ctx context.Context, dto dto.GetLinksDTO) ([]domain.Link, error)
 	Get(ctx context.Context, id int64) (domain.Link, error)
 	Create(ctx context.Context, dto dto.CreateLinkDTO) (domain.Link, error)
 	Update(ctx context.Context, id int64, dto dto.UpdateLinkDTO) (domain.Link, error)
@@ -31,8 +32,25 @@ func NewService(basePath string, repository LinkRepository) *service {
 	}
 }
 
-func (s *service) GetAll(ctx context.Context) ([]domain.Link, error) {
-	return s.repository.FindAll(ctx)
+func (s *service) Count(ctx context.Context) (int64, error) {
+	return s.repository.Count(ctx)
+}
+
+func (s *service) GetAll(ctx context.Context, from, to int64) ([]domain.Link, error) {
+	if from <= 0 || to <= 0 {
+		return []domain.Link{}, errors.New("from and to must be greater than zero")
+	}
+
+	if from >= to {
+		return []domain.Link{}, errors.New("from must be less than to")
+	}
+
+	limit := to - from + 1
+	offset := from - 1
+	return s.repository.FindAll(ctx, dto.GetLinksDTO{
+		Limit:  &limit,
+		Offset: &offset,
+	})
 }
 
 func (s *service) Get(ctx context.Context, id int64) (domain.Link, error) {

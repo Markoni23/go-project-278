@@ -1,6 +1,11 @@
 -- name: GetLinks :many
 SELECT * FROM links
-ORDER BY id;
+ORDER BY id
+LIMIT $1
+OFFSET $2;
+
+-- name: GetLinksCount :one
+SELECT COUNT(1) FROM links;
 
 -- name: GetLink :one
 SELECT * FROM links
