@@ -25,7 +25,7 @@ type DBConfig struct {
 
 func LoadEnv() Config {
 	if err := godotenv.Load(); err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	return Config{
