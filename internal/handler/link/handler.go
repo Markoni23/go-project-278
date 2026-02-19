@@ -4,20 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"markoni23/url-shortener/internal/domain"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"markoni23/url-shortener/internal/domain"
 )
 
 type Service interface {
 	Count(ctx context.Context) (int64, error)
 	GetAll(ctx context.Context, from, to int64) ([]domain.Link, error)
 	Get(ctx context.Context, id int64) (domain.Link, error)
-	Create(ctx context.Context, originalUrl, shortName string) (domain.Link, error)
-	Update(ctx context.Context, id int64, originalUrl, shortName string) (domain.Link, error)
+	Create(ctx context.Context, originalURL, shortName string) (domain.Link, error)
+	Update(ctx context.Context, id int64, originalURL, shortName string) (domain.Link, error)
 	Delete(ctx context.Context, id int64) error
 }
 
@@ -38,32 +38,29 @@ func (l *handler) GetLinksList(ctx *gin.Context) {
 	fromToSlice := strings.Split(rangeWithoutBrackets, ",")
 
 	if len(fromToSlice) != 2 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "wrong range format"})
-		return
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "wrong range format"})
 	}
 
 	from, err := strconv.Atoi(strings.TrimSpace(fromToSlice[0]))
 	if err != nil {
-		ctx.JSON(400, gin.H{"error": "invalid 'from' value"})
-		return
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid 'from' value"})
 	}
 
 	to, err := strconv.Atoi(strings.TrimSpace(fromToSlice[1]))
 	if err != nil {
-		ctx.JSON(400, gin.H{"error": "invalid 'to' value"})
-		return
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid 'to' value"})
 	}
 
 	res, err := l.service.GetAll(ctx, int64(from), int64(to))
 	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
 	count, err := l.service.Count(ctx)
 	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
-	
+
 	headerValue := fmt.Sprintf("links %d-%d/%d", from, to, count)
 	ctx.Header("Content-Range", headerValue)
 

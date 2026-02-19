@@ -1,14 +1,10 @@
 package config
 
 import (
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
-)
-
-const (
-	envDevelop = "development"
-	envProd    = "production"
 )
 
 type Config struct {
@@ -28,7 +24,10 @@ type DBConfig struct {
 }
 
 func LoadEnv() Config {
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		log.Fatal(err)
+	}
+
 	return Config{
 		Env: os.Getenv("ENV"),
 		Server: ServerConfig{

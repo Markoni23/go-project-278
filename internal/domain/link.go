@@ -7,7 +7,6 @@ type Link struct {
 	ShortUrl    string `json:"short_url"`
 }
 
-
 type LinkNotFoundError struct{}
 
 func (l *LinkNotFoundError) Error() string {

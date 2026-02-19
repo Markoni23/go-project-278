@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math/rand/v2"
+
 	"markoni23/url-shortener/internal/domain"
 	"markoni23/url-shortener/internal/dto"
-	"math/rand"
-	"time"
 )
 
 type LinkRepository interface {
@@ -66,9 +66,9 @@ func (s *service) Get(ctx context.Context, id int64) (domain.Link, error) {
 	return link, nil
 }
 
-func (s *service) Update(ctx context.Context, id int64, originalUrl, shortName string) (domain.Link, error) {
+func (s *service) Update(ctx context.Context, id int64, originalURL, shortName string) (domain.Link, error) {
 	res, err := s.repository.Update(ctx, id, dto.UpdateLinkDTO{
-		OriginalUrl: &originalUrl,
+		OriginalUrl: &originalURL,
 		ShortName:   &shortName,
 	})
 	if err != nil {
@@ -86,27 +86,27 @@ func (s *service) Delete(ctx context.Context, id int64) error {
 	return s.repository.Delete(ctx, id)
 }
 
-func (s *service) Create(ctx context.Context, originalUrl, shortName string) (domain.Link, error) {
+func (s *service) Create(ctx context.Context, originalURL, shortName string) (domain.Link, error) {
 	if shortName == "" {
 		shortName = GenerateShortName()
 	}
 	shortLink := fmt.Sprintf("%s/%s", s.basePath, GenerateShortName())
 
 	return s.repository.Create(ctx, dto.CreateLinkDTO{
-		OriginalUrl: &originalUrl,
+		OriginalUrl: &originalURL,
 		ShortName:   &shortName,
 		ShortUrl:    &shortLink,
 	})
 }
 
-const SHORT_NAME_LENGTH = 8
+const ShortNameLength = 8
 
 func GenerateShortName() string {
 	alphabet := "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM"
-	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
-	res := make([]byte, SHORT_NAME_LENGTH)
-	for i := range SHORT_NAME_LENGTH {
-		res[i] = alphabet[rand.Int()%len(alphabet)]
+	random := rand.New(&rand.Rand{})
+	res := make([]byte, ShortNameLength)
+	for i := range ShortNameLength {
+		res[i] = alphabet[random.Int()%len(alphabet)]
 	}
 	return string(res)
 }

@@ -18,4 +18,3 @@ func InitDB(databaseUrl string) (*sql.DB, error) {
 
 	return db, nil
 }
-

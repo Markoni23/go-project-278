@@ -1,9 +1,11 @@
 package app
 
 import (
-	"context"
-	"database/sql"
+	"fmt"
+	"log"
+
 	"markoni23/url-shortener/internal/config"
+	"markoni23/url-shortener/internal/db"
 	"markoni23/url-shortener/internal/handler"
 	linkHandler "markoni23/url-shortener/internal/handler/link"
 	linkRepository "markoni23/url-shortener/internal/repository/link"
@@ -15,7 +17,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Run(ctx context.Context, cfg config.Config, db *sql.DB) error {
+func Run(cfg config.Config) error {
+	db, err := db.InitDB(cfg.Database.DatabaseUrl)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Error closing database: %v", err)
+		}
+	}()
+
 	router := gin.Default()
 	router.Use(sentrygin.New(sentrygin.Options{}))
 
@@ -30,15 +42,13 @@ func Run(ctx context.Context, cfg config.Config, db *sql.DB) error {
 	})
 
 	linkRepo := linkRepository.NewDBLinkRepository(db)
-	linkService := linkService.NewService(cfg.Server.BasePath, linkRepo)
-	linkHand := linkHandler.NewHandler(linkService)
+	linkSvc := linkService.NewService(cfg.Server.BasePath, linkRepo)
+	linkHand := linkHandler.NewHandler(linkSvc)
 
 	handler.RegisterRoutes(&router.RouterGroup, linkHand)
 	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
 	})
 
-	router.Run(":" + cfg.Server.Port)
-
-	return nil
+	return router.Run(":" + cfg.Server.Port)
 }

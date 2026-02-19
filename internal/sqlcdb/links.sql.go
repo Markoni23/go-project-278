@@ -76,8 +76,8 @@ OFFSET $2
 `
 
 type GetLinksParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int64
+	Offset int64
 }
 
 func (q *Queries) GetLinks(ctx context.Context, arg GetLinksParams) ([]Link, error) {

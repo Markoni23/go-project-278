@@ -3,6 +3,7 @@ package link
 import (
 	"context"
 	"database/sql"
+
 	"markoni23/url-shortener/internal/domain"
 	"markoni23/url-shortener/internal/dto"
 	"markoni23/url-shortener/internal/sqlcdb"
@@ -24,8 +25,8 @@ func (d *DBLinkRepositry) Count(ctx context.Context) (int64, error) {
 
 func (d *DBLinkRepositry) FindAll(ctx context.Context, dto dto.GetLinksDTO) ([]domain.Link, error) {
 	links, err := d.queries.GetLinks(ctx, sqlcdb.GetLinksParams{
-		Limit:  int32(*dto.Limit),
-		Offset: int32(*dto.Offset),
+		Limit:  int64(*dto.Limit),
+		Offset: int64(*dto.Offset),
 	})
 	if err != nil {
 		return []domain.Link{}, err
@@ -52,7 +53,6 @@ func (d *DBLinkRepositry) Create(ctx context.Context, dto dto.CreateLinkDTO) (do
 		ShortName:   sql.NullString{String: *dto.ShortName, Valid: dto.ShortName != nil},
 		ShortUrl:    sql.NullString{String: *dto.ShortUrl, Valid: dto.ShortUrl != nil},
 	})
-
 	if err != nil {
 		return domain.Link{}, err
 	}
