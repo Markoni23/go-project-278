@@ -3,7 +3,7 @@ test:
 	go test -v ./... -race
 
 build:
-	go build -o bin/url-shortener ./cmd/url-shortener
+	go build -o bin/url-shortener ./main.go
 
 install:
 	go install
@@ -12,4 +12,4 @@ lint:
 	golangci-lint run ./...
 
 air:
-	air ./cmd/url-shortener/main.go
+	air ./main.go
