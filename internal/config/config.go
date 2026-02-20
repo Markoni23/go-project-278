@@ -7,10 +7,18 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const (
+	envDev = "dev"
+)
+
 type Config struct {
 	Env      string
 	Server   ServerConfig
 	Database DBConfig
+}
+
+func (c *Config) IsDevelopmentEnv() bool {
+	return c.Env == envDev
 }
 
 type ServerConfig struct {
