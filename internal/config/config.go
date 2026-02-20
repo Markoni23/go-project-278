@@ -14,9 +14,10 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	BasePath  string
-	Port      string
-	SentryDSN string
+	BasePath    string
+	Port        string
+	SentryDSN   string
+	FrontendUrl string
 }
 
 type DBConfig struct {
@@ -31,9 +32,10 @@ func LoadEnv() Config {
 	return Config{
 		Env: os.Getenv("ENV"),
 		Server: ServerConfig{
-			BasePath:  os.Getenv("BASE_PATH"),
-			Port:      os.Getenv("PORT"),
-			SentryDSN: os.Getenv("SENTRY_DSN"),
+			BasePath:    os.Getenv("BASE_PATH"),
+			Port:        os.Getenv("PORT"),
+			SentryDSN:   os.Getenv("SENTRY_DSN"),
+			FrontendUrl: os.Getenv("FRONTEND_URL"),
 		},
 		Database: DBConfig{
 			DatabaseUrl: os.Getenv("DATABASE_URL"),

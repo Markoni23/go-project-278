@@ -1,51 +1,52 @@
 package app
 
 import (
-	"fmt"
-	"log"
-
+	"database/sql"
 	"markoni23/url-shortener/internal/config"
-	"markoni23/url-shortener/internal/db"
-	"markoni23/url-shortener/internal/handler"
 	linkHandler "markoni23/url-shortener/internal/handler/link"
 	linkRepository "markoni23/url-shortener/internal/repository/link"
 	linkService "markoni23/url-shortener/internal/service/link"
 	"net/http"
 
-	"github.com/getsentry/sentry-go"
 	sentrygin "github.com/getsentry/sentry-go/gin"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func Run(cfg config.Config) error {
-	db, err := db.InitDB(cfg.Database.DatabaseUrl)
-	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer func() {
-		if err := db.Close(); err != nil {
-			log.Printf("Error closing database: %v", err)
-		}
-	}()
-
+func Run(cfg config.Config, db *sql.DB) error {
 	router := gin.Default()
-	router.Use(sentrygin.New(sentrygin.Options{}))
 
-	router.GET("/", func(ctx *gin.Context) {
-		if hub := sentrygin.GetHubFromContext(ctx); hub != nil {
-			hub.WithScope(func(scope *sentry.Scope) {
-				scope.SetExtra("unwantedQuery", "someQueryDataMaybe")
-				hub.CaptureMessage("User provided unwanted query string, but we recovered just fine")
-			})
-		}
-		ctx.Status(http.StatusOK)
-	})
+	if cfg.Server.SentryDSN != "" {
+		router.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
+	}
+
+	corsConfig := cors.DefaultConfig()
+	allowedOrigin := cfg.Server.FrontendUrl
+
+	if allowedOrigin != "" {
+		corsConfig.AllowOrigins = []string{allowedOrigin}
+	}
+
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
+	router.Use(cors.New(corsConfig))
 
 	linkRepo := linkRepository.NewDBLinkRepository(db)
 	linkSvc := linkService.NewService(cfg.Server.BasePath, linkRepo)
 	linkHand := linkHandler.NewHandler(linkSvc)
 
-	handler.RegisterRoutes(&router.RouterGroup, linkHand)
+	apiGroup := router.Group("/api")
+	{
+		linksRoutes := apiGroup.Group("/links")
+		{
+			linksRoutes.GET("/", linkHand.GetLinksList)
+			linksRoutes.POST("/", linkHand.CreateLink)
+			linksRoutes.GET("/:id", linkHand.GetLink)
+			linksRoutes.PUT("/:id", linkHand.UpdateLink)
+			linksRoutes.DELETE("/:id", linkHand.DeleteLink)
+		}
+	}
+
 	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
 	})

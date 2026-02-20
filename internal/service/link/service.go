@@ -37,7 +37,7 @@ func (s *service) Count(ctx context.Context) (int64, error) {
 }
 
 func (s *service) GetAll(ctx context.Context, from, to int64) ([]domain.Link, error) {
-	if from <= 0 || to <= 0 {
+	if from < 0 || to <= 0 {
 		return []domain.Link{}, errors.New("from and to must be greater than zero")
 	}
 
@@ -45,8 +45,8 @@ func (s *service) GetAll(ctx context.Context, from, to int64) ([]domain.Link, er
 		return []domain.Link{}, errors.New("from must be less than to")
 	}
 
-	limit := to - from + 1
-	offset := from - 1
+	limit := to - from
+	offset := from
 	return s.repository.FindAll(ctx, dto.GetLinksDTO{
 		Limit:  &limit,
 		Offset: &offset,

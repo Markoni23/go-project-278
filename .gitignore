@@ -21,3 +21,4 @@ vendor/
 .env
 
 tmp/
+node_modules

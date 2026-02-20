@@ -13,3 +13,6 @@ lint:
 
 air:
 	air ./main.go
+
+run:
+	npx concurrently "npx start-hexlet-url-shortener-frontend" "go run main.go"

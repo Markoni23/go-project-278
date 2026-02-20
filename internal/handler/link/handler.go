@@ -8,8 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"markoni23/url-shortener/internal/domain"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Service interface {
@@ -32,7 +33,7 @@ func NewHandler(service Service) *handler {
 }
 
 func (l *handler) GetLinksList(ctx *gin.Context) {
-	rangeString := ctx.DefaultQuery("range", "[1,10]")
+	rangeString := ctx.DefaultQuery("range", "[0,10]")
 
 	rangeWithoutBrackets := strings.Trim(rangeString, "[]")
 	fromToSlice := strings.Split(rangeWithoutBrackets, ",")
