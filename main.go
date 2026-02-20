@@ -25,7 +25,7 @@ func main() {
 
 	database, err := db.InitDB(cfg.Database.DatabaseUrl)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %w", err)
+		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer func() {
 		if err := database.Close(); err != nil {
