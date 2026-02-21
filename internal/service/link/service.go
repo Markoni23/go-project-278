@@ -45,7 +45,7 @@ func (s *service) GetAll(ctx context.Context, from, to int64) ([]domain.Link, er
 		return []domain.Link{}, errors.New("from must be less than to")
 	}
 
-	limit := to - from
+	limit := to - from + 1
 	offset := from
 	return s.repository.FindAll(ctx, dto.GetLinksDTO{
 		Limit:  &limit,
@@ -103,10 +103,9 @@ const ShortNameLength = 8
 
 func GenerateShortName() string {
 	alphabet := "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM"
-	random := rand.New(&rand.Rand{})
 	res := make([]byte, ShortNameLength)
 	for i := range ShortNameLength {
-		res[i] = alphabet[random.Int()%len(alphabet)]
+		res[i] = alphabet[rand.IntN(len(alphabet))]
 	}
 	return string(res)
 }

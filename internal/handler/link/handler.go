@@ -80,13 +80,13 @@ func (h *handler) CreateLink(ctx *gin.Context) {
 		return
 	}
 
-	_, err := h.service.Create(ctx, r.OriginalUrl, r.ShortName)
+	link, err := h.service.Create(ctx, r.OriginalUrl, r.ShortName)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.Status(http.StatusCreated)
+	ctx.JSON(http.StatusCreated, link)
 }
 
 func (h *handler) GetLink(ctx *gin.Context) {

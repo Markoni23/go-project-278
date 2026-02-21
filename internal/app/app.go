@@ -21,11 +21,9 @@ func Run(cfg config.Config, db *sql.DB) error {
 	}
 
 	corsConfig := cors.DefaultConfig()
-
+	corsConfig.AllowOrigins = []string{cfg.Server.BasePath}
 	if cfg.Server.FrontendUrl != "" {
-		corsConfig.AllowOrigins = []string{cfg.Server.FrontendUrl}
-	} else {
-		corsConfig.AllowOrigins = []string{cfg.Server.BasePath}
+		corsConfig.AllowOrigins = []string{cfg.Server.BasePath, cfg.Server.FrontendUrl}
 	}
 
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
