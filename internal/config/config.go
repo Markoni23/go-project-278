@@ -41,7 +41,7 @@ func LoadEnv() Config {
 		Env: os.Getenv("ENV"),
 		Server: ServerConfig{
 			BasePath:    os.Getenv("BASE_PATH"),
-			Port:        os.Getenv("PORT"),
+			Port:        os.Getenv("APP_PORT"),
 			SentryDSN:   os.Getenv("SENTRY_DSN"),
 			FrontendUrl: os.Getenv("FRONTEND_URL"),
 		},
