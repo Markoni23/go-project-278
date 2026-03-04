@@ -1,4 +1,4 @@
-package domain
+package model
 
 type Link struct {
 	ID          int64  `json:"id"`

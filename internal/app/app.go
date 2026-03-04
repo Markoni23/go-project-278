@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"markoni23/url-shortener/internal/config"
 	linkHandler "markoni23/url-shortener/internal/handler/link"
-	linkRepository "markoni23/url-shortener/internal/repository/link"
+	visitHandler "markoni23/url-shortener/internal/handler/link_visit"
 	linkService "markoni23/url-shortener/internal/service/link"
+	visitService "markoni23/url-shortener/internal/service/link_visit"
+	"markoni23/url-shortener/internal/sqlcdb"
 	"net/http"
 
 	sentrygin "github.com/getsentry/sentry-go/gin"
@@ -30,9 +32,13 @@ func Run(cfg config.Config, db *sql.DB) error {
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
 	router.Use(cors.New(corsConfig))
 
-	linkRepo := linkRepository.NewDBLinkRepository(db)
-	linkSvc := linkService.NewService(cfg.Server.BasePath, linkRepo)
+	queries := sqlcdb.New(db)
+
+	linkSvc := linkService.NewService(cfg.Server.BasePath, queries)
 	linkHand := linkHandler.NewHandler(linkSvc)
+
+	visitSvc := visitService.NewService(queries)
+	visitHand := visitHandler.NewHandler(visitSvc, linkSvc)
 
 	apiGroup := router.Group("/api")
 	{
@@ -44,11 +50,16 @@ func Run(cfg config.Config, db *sql.DB) error {
 			linksRoutes.PUT("/:id", linkHand.UpdateLink)
 			linksRoutes.DELETE("/:id", linkHand.DeleteLink)
 		}
+		apiGroup.GET("/link_visits", visitHand.GetVisits)
 	}
+
+	router.GET("/r/:code", visitHand.VisistLink)
 
 	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
 	})
+
+	//router.GET("/r/:code", linkVisit)
 
 	return router.Run(":" + cfg.Server.Port)
 }

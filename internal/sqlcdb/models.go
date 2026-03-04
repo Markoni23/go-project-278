@@ -12,7 +12,16 @@ type Link struct {
 	ID          int64
 	OriginalUrl sql.NullString
 	ShortName   sql.NullString
-	ShortUrl    sql.NullString
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
+}
+
+type LinkVisit struct {
+	ID        int64
+	LinkID    int64
+	Ip        string
+	UserAgent sql.NullString
+	Referer   sql.NullString
+	Status    int32
+	CreatedAt sql.NullTime
 }

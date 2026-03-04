@@ -12,27 +12,25 @@ import (
 
 const createLink = `-- name: CreateLink :one
 INSERT INTO links (
-    original_url, short_name, short_url
+    original_url, short_name
 ) VALUES (
-    $1, $2, $3
+    $1, $2
 )
-RETURNING id, original_url, short_name, short_url, created_at, updated_at
+RETURNING id, original_url, short_name, created_at, updated_at
 `
 
 type CreateLinkParams struct {
 	OriginalUrl sql.NullString
 	ShortName   sql.NullString
-	ShortUrl    sql.NullString
 }
 
 func (q *Queries) CreateLink(ctx context.Context, arg CreateLinkParams) (Link, error) {
-	row := q.db.QueryRowContext(ctx, createLink, arg.OriginalUrl, arg.ShortName, arg.ShortUrl)
+	row := q.db.QueryRowContext(ctx, createLink, arg.OriginalUrl, arg.ShortName)
 	var i Link
 	err := row.Scan(
 		&i.ID,
 		&i.OriginalUrl,
 		&i.ShortName,
-		&i.ShortUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -50,7 +48,7 @@ func (q *Queries) DeleteLink(ctx context.Context, id int64) error {
 }
 
 const getLink = `-- name: GetLink :one
-SELECT id, original_url, short_name, short_url, created_at, updated_at FROM links
+SELECT id, original_url, short_name, created_at, updated_at FROM links
 WHERE id = $1 LIMIT 1
 `
 
@@ -61,7 +59,25 @@ func (q *Queries) GetLink(ctx context.Context, id int64) (Link, error) {
 		&i.ID,
 		&i.OriginalUrl,
 		&i.ShortName,
-		&i.ShortUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getLinkByShortName = `-- name: GetLinkByShortName :one
+SELECT id, original_url, short_name, created_at, updated_at FROM links
+WHERE short_name = $1
+LIMIT 1
+`
+
+func (q *Queries) GetLinkByShortName(ctx context.Context, shortName sql.NullString) (Link, error) {
+	row := q.db.QueryRowContext(ctx, getLinkByShortName, shortName)
+	var i Link
+	err := row.Scan(
+		&i.ID,
+		&i.OriginalUrl,
+		&i.ShortName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -69,15 +85,15 @@ func (q *Queries) GetLink(ctx context.Context, id int64) (Link, error) {
 }
 
 const getLinks = `-- name: GetLinks :many
-SELECT id, original_url, short_name, short_url, created_at, updated_at FROM links
+SELECT id, original_url, short_name, created_at, updated_at FROM links
 ORDER BY id
 LIMIT $1
 OFFSET $2
 `
 
 type GetLinksParams struct {
-	Limit  int64
-	Offset int64
+	Limit  int32
+	Offset int32
 }
 
 func (q *Queries) GetLinks(ctx context.Context, arg GetLinksParams) ([]Link, error) {
@@ -93,7 +109,6 @@ func (q *Queries) GetLinks(ctx context.Context, arg GetLinksParams) ([]Link, err
 			&i.ID,
 			&i.OriginalUrl,
 			&i.ShortName,
-			&i.ShortUrl,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -123,26 +138,23 @@ func (q *Queries) GetLinksCount(ctx context.Context) (int64, error) {
 
 const updateLink = `-- name: UpdateLink :one
 UPDATE links
-    SET original_url = $2,
-        short_name = $3
+    SET original_url = $2
 WHERE id = $1
-RETURNING id, original_url, short_name, short_url, created_at, updated_at
+RETURNING id, original_url, short_name, created_at, updated_at
 `
 
 type UpdateLinkParams struct {
 	ID          int64
 	OriginalUrl sql.NullString
-	ShortName   sql.NullString
 }
 
 func (q *Queries) UpdateLink(ctx context.Context, arg UpdateLinkParams) (Link, error) {
-	row := q.db.QueryRowContext(ctx, updateLink, arg.ID, arg.OriginalUrl, arg.ShortName)
+	row := q.db.QueryRowContext(ctx, updateLink, arg.ID, arg.OriginalUrl)
 	var i Link
 	err := row.Scan(
 		&i.ID,
 		&i.OriginalUrl,
 		&i.ShortName,
-		&i.ShortUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

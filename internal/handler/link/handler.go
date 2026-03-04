@@ -8,17 +8,17 @@ import (
 	"strconv"
 	"strings"
 
-	"markoni23/url-shortener/internal/domain"
+	"markoni23/url-shortener/internal/model"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Service interface {
 	Count(ctx context.Context) (int64, error)
-	GetAll(ctx context.Context, from, to int64) ([]domain.Link, error)
-	Get(ctx context.Context, id int64) (domain.Link, error)
-	Create(ctx context.Context, originalURL, shortName string) (domain.Link, error)
-	Update(ctx context.Context, id int64, originalURL, shortName string) (domain.Link, error)
+	GetAll(ctx context.Context, from, to int64) ([]model.Link, error)
+	Get(ctx context.Context, id int64) (model.Link, error)
+	Create(ctx context.Context, originalURL, shortName string) (model.Link, error)
+	Update(ctx context.Context, id int64, originalURL string) (model.Link, error)
 	Delete(ctx context.Context, id int64) error
 }
 
@@ -99,7 +99,7 @@ func (h *handler) GetLink(ctx *gin.Context) {
 
 	link, err := h.service.Get(ctx, id)
 	if err != nil {
-		if errors.Is(err, &domain.LinkNotFoundError{}) {
+		if errors.Is(err, &model.LinkNotFoundError{}) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
@@ -130,9 +130,9 @@ func (h *handler) UpdateLink(ctx *gin.Context) {
 		return
 	}
 
-	link, err := h.service.Update(ctx, id, req.OriginalUrl, req.ShortName)
+	link, err := h.service.Update(ctx, id, req.OriginalUrl)
 	if err != nil {
-		if errors.Is(err, &domain.LinkNotFoundError{}) {
+		if errors.Is(err, &model.LinkNotFoundError{}) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}

@@ -7,96 +7,115 @@ import (
 	"fmt"
 	"math/rand/v2"
 
-	"markoni23/url-shortener/internal/domain"
-	"markoni23/url-shortener/internal/dto"
+	"markoni23/url-shortener/internal/model"
+	"markoni23/url-shortener/internal/sqlcdb"
 )
 
-type LinkRepository interface {
-	Count(ctx context.Context) (int64, error)
-	FindAll(ctx context.Context, dto dto.GetLinksDTO) ([]domain.Link, error)
-	Get(ctx context.Context, id int64) (domain.Link, error)
-	Create(ctx context.Context, dto dto.CreateLinkDTO) (domain.Link, error)
-	Update(ctx context.Context, id int64, dto dto.UpdateLinkDTO) (domain.Link, error)
-	Delete(ctx context.Context, id int64) error
-}
-
 type service struct {
-	basePath   string
-	repository LinkRepository
+	basePath string
+	queries  *sqlcdb.Queries
 }
 
-func NewService(basePath string, repository LinkRepository) *service {
+func NewService(basePath string, queries *sqlcdb.Queries) *service {
 	return &service{
-		basePath:   basePath,
-		repository: repository,
+		basePath: basePath,
+		queries:  queries,
 	}
 }
 
 func (s *service) Count(ctx context.Context) (int64, error) {
-	return s.repository.Count(ctx)
+	return s.queries.GetLinksCount(ctx)
 }
 
-func (s *service) GetAll(ctx context.Context, from, to int64) ([]domain.Link, error) {
+func (s *service) GetAll(ctx context.Context, from, to int64) ([]model.Link, error) {
 	if from < 0 || to <= 0 {
-		return []domain.Link{}, errors.New("from and to must be greater than zero")
+		return []model.Link{}, errors.New("from and to must be greater than zero")
 	}
 
 	if from >= to {
-		return []domain.Link{}, errors.New("from must be less than to")
+		return []model.Link{}, errors.New("from must be less than to")
 	}
 
 	limit := to - from + 1
 	offset := from
-	return s.repository.FindAll(ctx, dto.GetLinksDTO{
-		Limit:  &limit,
-		Offset: &offset,
+	linksRaw, err := s.queries.GetLinks(ctx, sqlcdb.GetLinksParams{
+		Limit:  int32(limit),
+		Offset: int32(offset),
 	})
-}
 
-func (s *service) Get(ctx context.Context, id int64) (domain.Link, error) {
-	link, err := s.repository.Get(ctx, id)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return domain.Link{}, &domain.LinkNotFoundError{}
-		default:
-			return domain.Link{}, nil
-		}
+		return []model.Link{}, err
 	}
-	return link, nil
-}
 
-func (s *service) Update(ctx context.Context, id int64, originalURL, shortName string) (domain.Link, error) {
-	res, err := s.repository.Update(ctx, id, dto.UpdateLinkDTO{
-		OriginalUrl: &originalURL,
-		ShortName:   &shortName,
-	})
-	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return domain.Link{}, &domain.LinkNotFoundError{}
-		default:
-			return domain.Link{}, nil
-		}
+	res := make([]model.Link, len(linksRaw))
+	for i, raw := range linksRaw {
+		res[i] = s.rawToModel(raw)
 	}
+
 	return res, nil
 }
 
-func (s *service) Delete(ctx context.Context, id int64) error {
-	return s.repository.Delete(ctx, id)
+func (s *service) Get(ctx context.Context, id int64) (model.Link, error) {
+	link, err := s.queries.GetLink(ctx, id)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return model.Link{}, &model.LinkNotFoundError{}
+		default:
+			return model.Link{}, nil
+		}
+	}
+	return s.rawToModel(link), nil
 }
 
-func (s *service) Create(ctx context.Context, originalURL, shortName string) (domain.Link, error) {
+func (s *service) GetLinkByShortName(ctx context.Context, shortName string) (model.Link, error) {
+	link, err := s.queries.GetLinkByShortName(ctx, sql.NullString{String: shortName, Valid: true})
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return model.Link{}, &model.LinkNotFoundError{}
+		default:
+			return model.Link{}, nil
+		}
+	}
+	return s.rawToModel(link), nil
+}
+
+func (s *service) Update(ctx context.Context, id int64, originalURL string) (model.Link, error) {
+	res, err := s.queries.UpdateLink(ctx, sqlcdb.UpdateLinkParams{
+		ID:          id,
+		OriginalUrl: sql.NullString{String: originalURL, Valid: true},
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return model.Link{}, &model.LinkNotFoundError{}
+		default:
+			return model.Link{}, nil
+		}
+	}
+	return s.rawToModel(res), nil
+}
+
+func (s *service) Delete(ctx context.Context, id int64) error {
+	return s.queries.DeleteLink(ctx, id)
+}
+
+func (s *service) Create(ctx context.Context, originalURL, shortName string) (model.Link, error) {
 	if shortName == "" {
 		shortName = GenerateShortName()
 	}
-	shortLink := fmt.Sprintf("%s/%s", s.basePath, GenerateShortName())
 
-	return s.repository.Create(ctx, dto.CreateLinkDTO{
-		OriginalUrl: &originalURL,
-		ShortName:   &shortName,
-		ShortUrl:    &shortLink,
+	res, err := s.queries.CreateLink(ctx, sqlcdb.CreateLinkParams{
+		OriginalUrl: sql.NullString{String: originalURL, Valid: true},
+		ShortName:   sql.NullString{String: shortName, Valid: true},
 	})
+
+	if err != nil {
+		return model.Link{}, err
+	}
+
+	return s.rawToModel(res), nil
 }
 
 const ShortNameLength = 8
@@ -108,4 +127,14 @@ func GenerateShortName() string {
 		res[i] = alphabet[rand.IntN(len(alphabet))]
 	}
 	return string(res)
+}
+
+func (s *service) rawToModel(raw sqlcdb.Link) model.Link {
+	shortUrl := fmt.Sprintf("%s/r/%s", s.basePath, raw.ShortName.String)
+	return model.Link{
+		ID:          raw.ID,
+		OriginalUrl: raw.OriginalUrl.String,
+		ShortName:   raw.ShortName.String,
+		ShortUrl:    shortUrl,
+	}
 }
