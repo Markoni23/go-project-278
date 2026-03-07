@@ -1,6 +1,7 @@
 package linkvisit
 
 import (
+	"context"
 	"fmt"
 	"markoni23/url-shortener/internal/model"
 	"net/http"
@@ -8,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/net/context"
 )
 
 type VisitService interface {

@@ -9,8 +9,10 @@ import (
 	"strings"
 
 	"markoni23/url-shortener/internal/model"
+	"markoni23/url-shortener/internal/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type Service interface {
@@ -76,13 +78,29 @@ type CreateLinkRequest struct {
 func (h *handler) CreateLink(ctx *gin.Context) {
 	var r CreateLinkRequest
 	if err := ctx.ShouldBindJSON(&r); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if _, ok := err.(validator.ValidationErrors); ok {
+			ctx.JSON(http.StatusUnprocessableEntity, utils.ErrorResponse{
+				Errors: utils.FormatValidationErrors(err),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusBadRequest, utils.SimpleErrorResponse{
+			Error: "invalid request",
+		})
 		return
 	}
 
 	link, err := h.service.Create(ctx, r.OriginalUrl, r.ShortName)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if utils.IsDuplicateKeyError(err) {
+			ctx.JSON(http.StatusUnprocessableEntity, utils.ErrorResponse{
+				Errors: utils.FormatDuplicateKeyError(err, "short_name"),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to create link"})
 		return
 	}
 
@@ -126,18 +144,34 @@ func (h *handler) UpdateLink(ctx *gin.Context) {
 
 	var req UpdateLinkRequest
 	if err := ctx.ShouldBindBodyWithJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, err.Error())
+		if _, ok := err.(validator.ValidationErrors); ok {
+			ctx.JSON(http.StatusUnprocessableEntity, utils.ErrorResponse{
+				Errors: utils.FormatValidationErrors(err),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusBadRequest, utils.SimpleErrorResponse{
+			Error: "invalid request",
+		})
 		return
 	}
 
 	link, err := h.service.Update(ctx, id, req.OriginalUrl)
 	if err != nil {
 		if errors.Is(err, &model.LinkNotFoundError{}) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Link not found"})
 			return
 		}
 
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if utils.IsDuplicateKeyError(err) {
+			ctx.JSON(http.StatusUnprocessableEntity, utils.ErrorResponse{
+				Errors: utils.FormatDuplicateKeyError(err, "short_name"),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to update link"})
 		return
 	}
 
