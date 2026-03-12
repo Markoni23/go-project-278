@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	envDev = "dev"
+	envDev  = "dev"
+	envProd = "prod"
 )
 
 type Config struct {
@@ -37,8 +38,13 @@ func LoadEnv() Config {
 		log.Print(err)
 	}
 
+	env, exists := os.LookupEnv("ENV")
+	if !exists {
+		env = envDev
+	}
+
 	return Config{
-		Env: os.Getenv("ENV"),
+		Env: env,
 		Server: ServerConfig{
 			BasePath:    os.Getenv("BASE_PATH"),
 			Port:        os.Getenv("APP_PORT"),
