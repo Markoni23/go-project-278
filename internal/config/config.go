@@ -43,16 +43,36 @@ func LoadEnv() Config {
 		env = envDev
 	}
 
+	port, exists := os.LookupEnv("APP_PORT")
+	if !exists {
+		port = "8080"
+	}
+
+	basePath, exists := os.LookupEnv("BASE_PATH")
+	if !exists {
+		basePath = "http://localhost:8080"
+	}
+
+	frontendUrl, exists := os.LookupEnv("FRONTEND_URL")
+	if !exists {
+		frontendUrl = "http://localhost:5123"
+	}
+
+	databaseURL, exists := os.LookupEnv("DATABASE_URL")
+	if !exists {
+		databaseURL = "postgres://postgres:password@localhost:5432/urlshortener?sslmode=disable"
+	}
+
 	return Config{
 		Env: env,
 		Server: ServerConfig{
-			BasePath:    os.Getenv("BASE_PATH"),
-			Port:        os.Getenv("APP_PORT"),
+			BasePath:    basePath,
+			Port:        port,
 			SentryDSN:   os.Getenv("SENTRY_DSN"),
-			FrontendUrl: os.Getenv("FRONTEND_URL"),
+			FrontendUrl: frontendUrl,
 		},
 		Database: DBConfig{
-			DatabaseUrl: os.Getenv("DATABASE_URL"),
+			DatabaseUrl: databaseURL,
 		},
 	}
 }

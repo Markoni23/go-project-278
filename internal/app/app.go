@@ -23,13 +23,10 @@ func Run(cfg config.Config, db *sql.DB) error {
 	}
 
 	corsConfig := cors.DefaultConfig()
-	if cfg.IsDevelopmentEnv() {
-		corsConfig.AllowOrigins = []string{"http://localhost:5123"}
-	} else {
-		corsConfig.AllowOrigins = []string{cfg.Server.BasePath}
-		if cfg.Server.FrontendUrl != "" {
-			corsConfig.AllowOrigins = []string{cfg.Server.BasePath, cfg.Server.FrontendUrl}
-		}
+
+	corsConfig.AllowOrigins = []string{cfg.Server.BasePath}
+	if cfg.Server.FrontendUrl != "" {
+		corsConfig.AllowOrigins = []string{cfg.Server.BasePath, cfg.Server.FrontendUrl}
 	}
 
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}

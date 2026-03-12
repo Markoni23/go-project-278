@@ -22,7 +22,7 @@ func main() {
 	} else {
 		log.Println("No SentryDSN")
 	}
-
+	
 	database, err := db.InitDB(cfg.Database.DatabaseUrl)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
