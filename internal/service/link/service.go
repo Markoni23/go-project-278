@@ -81,10 +81,11 @@ func (s *service) GetLinkByShortName(ctx context.Context, shortName string) (mod
 	return s.rawToModel(link), nil
 }
 
-func (s *service) Update(ctx context.Context, id int64, originalURL string) (model.Link, error) {
+func (s *service) Update(ctx context.Context, id int64, originalURL, shortName string) (model.Link, error) {
 	res, err := s.queries.UpdateLink(ctx, sqlcdb.UpdateLinkParams{
 		ID:          id,
 		OriginalUrl: sql.NullString{String: originalURL, Valid: true},
+		ShortName:   sql.NullString{String: shortName, Valid: true},
 	})
 	if err != nil {
 		switch {
@@ -98,6 +99,15 @@ func (s *service) Update(ctx context.Context, id int64, originalURL string) (mod
 }
 
 func (s *service) Delete(ctx context.Context, id int64) error {
+	_, err := s.queries.GetLink(ctx, id)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return &model.LinkNotFoundError{}
+		default:
+			return err
+		}
+	}
 	return s.queries.DeleteLink(ctx, id)
 }
 

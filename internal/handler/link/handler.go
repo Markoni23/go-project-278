@@ -20,7 +20,7 @@ type Service interface {
 	GetAll(ctx context.Context, from, to int64) ([]model.Link, error)
 	Get(ctx context.Context, id int64) (model.Link, error)
 	Create(ctx context.Context, originalURL, shortName string) (model.Link, error)
-	Update(ctx context.Context, id int64, originalURL string) (model.Link, error)
+	Update(ctx context.Context, id int64, originalURL, shortName string) (model.Link, error)
 	Delete(ctx context.Context, id int64) error
 }
 
@@ -157,7 +157,7 @@ func (h *handler) UpdateLink(ctx *gin.Context) {
 		return
 	}
 
-	link, err := h.service.Update(ctx, id, req.OriginalUrl)
+	link, err := h.service.Update(ctx, id, req.OriginalUrl, req.ShortName)
 	if err != nil {
 		if errors.Is(err, &model.LinkNotFoundError{}) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Link not found"})
@@ -186,6 +186,11 @@ func (h *handler) DeleteLink(ctx *gin.Context) {
 		return
 	}
 	if err := h.service.Delete(ctx, id); err != nil {
+		if errors.Is(err, &model.LinkNotFoundError{}) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Link not found"})
+			return
+		}
+
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

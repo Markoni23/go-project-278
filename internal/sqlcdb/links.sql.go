@@ -138,7 +138,8 @@ func (q *Queries) GetLinksCount(ctx context.Context) (int64, error) {
 
 const updateLink = `-- name: UpdateLink :one
 UPDATE links
-    SET original_url = $2
+    SET original_url = $2,
+        short_name = $3
 WHERE id = $1
 RETURNING id, original_url, short_name, created_at, updated_at
 `
@@ -146,10 +147,11 @@ RETURNING id, original_url, short_name, created_at, updated_at
 type UpdateLinkParams struct {
 	ID          int64
 	OriginalUrl sql.NullString
+	ShortName   sql.NullString
 }
 
 func (q *Queries) UpdateLink(ctx context.Context, arg UpdateLinkParams) (Link, error) {
-	row := q.db.QueryRowContext(ctx, updateLink, arg.ID, arg.OriginalUrl)
+	row := q.db.QueryRowContext(ctx, updateLink, arg.ID, arg.OriginalUrl, arg.ShortName)
 	var i Link
 	err := row.Scan(
 		&i.ID,
