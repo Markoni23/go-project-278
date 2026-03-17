@@ -42,26 +42,31 @@ func (l *handler) GetLinksList(ctx *gin.Context) {
 
 	if len(fromToSlice) != 2 {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "wrong range format"})
+		return
 	}
 
 	from, err := strconv.Atoi(strings.TrimSpace(fromToSlice[0]))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid 'from' value"})
+		return
 	}
 
 	to, err := strconv.Atoi(strings.TrimSpace(fromToSlice[1]))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid 'to' value"})
+		return
 	}
 
 	res, err := l.service.GetAll(ctx, int64(from), int64(to))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	count, err := l.service.Count(ctx)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	headerValue := fmt.Sprintf("links %d-%d/%d", from, to, count)

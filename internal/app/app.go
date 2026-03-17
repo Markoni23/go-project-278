@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"log"
 	"markoni23/url-shortener/internal/config"
 	linkHandler "markoni23/url-shortener/internal/handler/link"
 	visitHandler "markoni23/url-shortener/internal/handler/link_visit"
@@ -10,6 +11,7 @@ import (
 	"markoni23/url-shortener/internal/sqlcdb"
 	"net/http"
 
+	"github.com/getsentry/sentry-go"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -19,7 +21,14 @@ func Run(cfg config.Config, db *sql.DB) error {
 	router := gin.Default()
 
 	if cfg.Server.SentryDSN != "" {
+		if err := sentry.Init(sentry.ClientOptions{
+			Dsn: cfg.Server.SentryDSN,
+		}); err != nil {
+			log.Printf("Sentry initialization failed: %v\n", err)
+		}
 		router.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
+	} else {
+		log.Println("No SentryDSN")
 	}
 
 	corsConfig := cors.DefaultConfig()

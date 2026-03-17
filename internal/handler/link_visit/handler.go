@@ -39,11 +39,11 @@ func (h *handler) VisistLink(ctx *gin.Context) {
 	link, err := h.linkService.GetLinkByShortName(ctx, code)
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	if err := h.visitService.Visit(ctx, link); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 }
@@ -61,21 +61,25 @@ func (h *handler) GetVisits(ctx *gin.Context) {
 	from, err := strconv.Atoi(strings.TrimSpace(fromToSlice[0]))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid 'from' value"})
+		return
 	}
 
 	to, err := strconv.Atoi(strings.TrimSpace(fromToSlice[1]))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid 'to' value"})
+		return
 	}
 
 	res, err := h.visitService.GetAll(ctx, int64(from), int64(to))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	count, err := h.visitService.Count(ctx)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	headerValue := fmt.Sprintf("links_visits %d-%d/%d", from, to, count)

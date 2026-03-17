@@ -62,7 +62,7 @@ func (s *service) Get(ctx context.Context, id int64) (model.Link, error) {
 		case errors.Is(err, sql.ErrNoRows):
 			return model.Link{}, &model.LinkNotFoundError{}
 		default:
-			return model.Link{}, nil
+			return model.Link{}, err
 		}
 	}
 	return s.rawToModel(link), nil
@@ -75,7 +75,7 @@ func (s *service) GetLinkByShortName(ctx context.Context, shortName string) (mod
 		case errors.Is(err, sql.ErrNoRows):
 			return model.Link{}, &model.LinkNotFoundError{}
 		default:
-			return model.Link{}, nil
+			return model.Link{}, err
 		}
 	}
 	return s.rawToModel(link), nil
@@ -92,7 +92,7 @@ func (s *service) Update(ctx context.Context, id int64, originalURL, shortName s
 		case errors.Is(err, sql.ErrNoRows):
 			return model.Link{}, &model.LinkNotFoundError{}
 		default:
-			return model.Link{}, nil
+			return model.Link{}, err
 		}
 	}
 	return s.rawToModel(res), nil
