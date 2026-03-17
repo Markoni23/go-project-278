@@ -76,8 +76,8 @@ func (l *handler) GetLinksList(ctx *gin.Context) {
 }
 
 type CreateLinkRequest struct {
-	OriginalUrl string `json:"original_url" binding:"required"`
-	ShortName   string `json:"short_name,omitempty"`
+	OriginalUrl string `json:"original_url" binding:"required,url"`
+	ShortName   string `json:"short_name" binding:"omitempty,min=3,max=32"`
 }
 
 func (h *handler) CreateLink(ctx *gin.Context) {
@@ -135,8 +135,8 @@ func (h *handler) GetLink(ctx *gin.Context) {
 }
 
 type UpdateLinkRequest struct {
-	OriginalUrl string `json:"original_url" binding:"required"`
-	ShortName   string `json:"short_name" binding:"required"`
+	OriginalUrl string `json:"original_url" binding:"required,url"`
+	ShortName   string `json:"short_name" binding:"omitempty,min=3,max=32"`
 }
 
 func (h *handler) UpdateLink(ctx *gin.Context) {
